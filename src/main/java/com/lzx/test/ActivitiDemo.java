@@ -1,17 +1,21 @@
 package com.lzx.test;
 
 import org.activiti.engine.*;
+import org.activiti.engine.history.HistoricActivityInstance;
+import org.activiti.engine.history.HistoricActivityInstanceQuery;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.repository.ProcessDefinition;
 import org.activiti.engine.repository.ProcessDefinitionQuery;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.activiti.engine.task.Task;
-import org.activiti.engine.task.TaskQuery;
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
 /**
@@ -32,7 +36,8 @@ public class ActivitiDemo {
         //2.从流程引擎中获取RepositoryService对像
         RepositoryService repositoryService = processEngine.getRepositoryService();
         //3.使用Service对象进行流程得部署
-        Deployment deploy = repositoryService.createDeployment().name("出差申请")
+        Deployment deploy = repositoryService.createDeployment()
+                .name("出差申请单")
                 .addClasspathResource("bpmn/evection.bpmn")
                 .addClasspathResource("bpmn/evection.png")
                 .deploy();
@@ -71,7 +76,7 @@ public class ActivitiDemo {
     @Test
     public void testFindPersonalTaskList() {
 //        任务负责人
-        String assignee = "jack";
+        String assignee = "jerry";
         ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
 //        创建TaskService
         TaskService taskService = processEngine.getTaskService();
@@ -99,17 +104,17 @@ public class ActivitiDemo {
 
         TaskService taskService = processEngine.getTaskService();
 
-//        //获取jerry对应的任务
-//        Task task = taskService.createTaskQuery()
-//                .processDefinitionKey("myEvection")
-//                .taskAssignee("zhangsan")
-//                .singleResult();
-
-       //获取jerry对应的任务
+//        //获取zhangsan对应的任务
         Task task = taskService.createTaskQuery()
                 .processDefinitionKey("myEvection")
-                .taskAssignee("jerry")
+                .taskAssignee("zhangsan")
                 .singleResult();
+
+       //获取jerry对应的任务
+//        Task task = taskService.createTaskQuery()
+//                .processDefinitionKey("myEvection")
+//                .taskAssignee("jerry")
+//                .singleResult();
 
 
 //        //完成jack得任务
@@ -177,7 +182,7 @@ public class ActivitiDemo {
 
         for (ProcessDefinition processDefinition : definitionList) {
             System.out.println("流程定义ID："+processDefinition.getId());
-            System.out.println("流程定义名称人："+processDefinition.getName());
+            System.out.println("流程定义名称："+processDefinition.getName());
             System.out.println("流程定义Key："+processDefinition.getKey());
             System.out.println("流程定义Version："+processDefinition.getVersion());
             System.out.println("流程部署ID："+processDefinition.getDeploymentId());
@@ -196,7 +201,7 @@ public class ActivitiDemo {
         RepositoryService repositoryService = processEngine.getRepositoryService();
 
 //        repositoryService.deleteDeployment("2501");
-    repositoryService.deleteDeployment("2501",true);
+    repositoryService.deleteDeployment("20001",true);
     }
 
 
@@ -204,7 +209,66 @@ public class ActivitiDemo {
      * 下载 资源文件
      */
     @Test
-    public void getDeployment(){
+    public void getDeployment() throws IOException {
+        //1.得到引擎
+        ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
+        //2.获取API：RepositoryService
+        RepositoryService repositoryService = processEngine.getRepositoryService();
+        //3.获取查询对象ProcessDefinitionQuery，查询流程定义信息
+        ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey("myEvection")
+                .singleResult();
+        //4.通过流程定义信息，获取部署ID
+        String deploymentId=processDefinition.getDeploymentId();
+        //5.通过RepositoryService，传递部署ID参数，读取资源信息（PNG和bpmn）
+        //png图片流
+        InputStream pngInput = repositoryService.getResourceAsStream(deploymentId, processDefinition.getDiagramResourceName());
+        //bpmn文件流
+        InputStream bpmnInput = repositoryService.getResourceAsStream(deploymentId, processDefinition.getResourceName());
 
+
+        File file_png = new File("D:/code_demo/sout_file/evectionflow01.png");
+        File file_bpmn = new File("D:/code_demo/sout_file/evectionflow01.bpmn");
+        FileOutputStream bpmnOut = new FileOutputStream(file_bpmn);
+        FileOutputStream pngOut = new FileOutputStream(file_png);
+//        7、输入流，输出流的转换
+        IOUtils.copy(pngInput,pngOut);
+        IOUtils.copy(bpmnInput,bpmnOut);
+//        8、关闭流
+        pngOut.close();
+        bpmnOut.close();
+        pngInput.close();
+        bpmnInput.close();
+
+
+    }
+
+
+    /**
+     * 查询历史信息
+     */
+    @Test
+    public void fineHistoryInfo(){
+        //1.获取流程引擎
+        ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
+        //2.获取historyService对象
+        HistoryService historyService = processEngine.getHistoryService();
+        //3.获取instanceQuery对象
+        HistoricActivityInstanceQuery instanceQuery = historyService.createHistoricActivityInstanceQuery();
+        //4.查询 actinst表，条件：根据 DefinitionId 查询
+        instanceQuery.processDefinitionId("myEvection:1:20004");
+        //5.根据创建时间升序排序
+        instanceQuery.orderByHistoricActivityInstanceStartTime().asc();
+
+
+        //输出
+        List<HistoricActivityInstance> activityInstances = instanceQuery.list();
+        for (HistoricActivityInstance hi : activityInstances) {
+            System.out.println(hi.getActivityId());
+            System.out.println(hi.getActivityName());
+            System.out.println(hi.getProcessDefinitionId());
+            System.out.println(hi.getProcessInstanceId());
+            System.out.println("===========");
+        }
     }
 }

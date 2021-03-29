@@ -19,13 +19,13 @@ public class TestCreate {
     public void testCreateDbTable() {
 
         //默认配置
-//        ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
+        ProcessEngine processEngine = ProcessEngines.getDefaultProcessEngine();
         //自定义配置
-        ProcessEngineConfiguration processEngineConfigurationFromResource = ProcessEngineConfiguration.
-                createProcessEngineConfigurationFromResource("activiti.cfg.xml","processEngineConfiguration");
+//        ProcessEngineConfiguration processEngineConfigurationFromResource = ProcessEngineConfiguration.
+//                createProcessEngineConfigurationFromResource("activiti.cfg.xml","processEngineConfiguration");
 
-        //  获取流程引擎对象
-        ProcessEngine processEngine = processEngineConfigurationFromResource.buildProcessEngine();
+          //获取流程引擎对象
+//        ProcessEngine processEngine = processEngineConfigurationFromResource.buildProcessEngine();
         System.out.println(processEngine);
 
 
